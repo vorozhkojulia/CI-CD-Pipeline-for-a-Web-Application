@@ -1,0 +1,62 @@
+stages:
+  - lint
+  - pre-test
+  - build
+  - test
+  - deploy
+
+# Stage 1: Run linters like ESLint to ensure code quality.
+lint:
+  stage: lint
+  image: node:14
+  script:
+    - npm install
+    - npm run lint
+  only:
+    - merge_requests
+    - master
+
+# Stage 2: Run unit tests to verify the application logic
+previous_test:
+  stage: pre-test
+  image: node:14
+  script:
+    - npm install
+    - npm test
+  only:
+    - merge_requests
+    - master
+
+# Stage 3: Building the application. Ensure the Dockerfile builds the app and creates an image.
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t myapp:latest .
+  only:
+    - master
+
+# Stage 4: Run unit tests container existiert
+test_container:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker run --rm myapp:latest npm test
+  only:
+    - master
+
+# Stage 5: Deploy to a server
+deploy:
+  stage: deploy
+  image: alpine
+  script:
+    - echo "Deploying to the server..."
+  environment:
+    name: production
+    url: https://yourdomain.com
+  only:
+    - master
